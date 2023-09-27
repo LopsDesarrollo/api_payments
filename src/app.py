@@ -3,6 +3,8 @@ from flask_mysqldb import MySQL
 from config import config
 from waitress import serve
 
+import datetime
+
 app = Flask(__name__)
 
 app.config['MYSQL_HOST']='127.0.0.1'
@@ -25,6 +27,26 @@ def list_payments():
       pay = {'id': fila[0], 'folio': fila[1], 'quantity': fila[2], 'date_entry': fila[3]}
       payments.append(pay)
     return jsonify({'payments': payments, 'Mensaje': "Pagos Registrados"})
+  except Exception as ex:
+    print(ex)
+    return jsonify({'mensaje': "Error"})
+  
+@app.route('/daypayments')
+def day_payments():
+  try:
+
+    startDate=str(datetime.date.today())
+    cursor = conexion.connection.cursor()
+    sql = "SELECT SUM(quantity) FROM payments WHERE date_entry BETWEEN '"+startDate+" 00:00:00' AND NOW();"
+    cursor.execute(sql)
+    datos = cursor.fetchall()
+    for fila in datos:
+      pay=fila[0]
+
+    if pay is None:
+      return jsonify({'daypayments': 0})
+    else:
+      return jsonify({'daypayments': pay})
   except Exception as ex:
     print(ex)
     return jsonify({'mensaje': "Error"})
@@ -68,7 +90,7 @@ def generateFolio():
     return previousFolio + 1  
 
 
-mode = "pro"
+mode = "dev"
 
 if __name__ == '__main__':
   #app.config.from_object(config['development'])
