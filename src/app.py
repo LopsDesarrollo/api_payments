@@ -8,7 +8,7 @@ import datetime
 app = Flask(__name__)
 
 app.config['MYSQL_HOST']='127.0.0.1'
-app.config['MYSQL_PORT']=3308
+app.config['MYSQL_PORT']=3306
 app.config['MYSQL_USER']='test'
 app.config['MYSQL_PASSWORD']='t3st'
 app.config['MYSQL_DB']='app_payments'
@@ -44,9 +44,37 @@ def day_payments():
       pay=fila[0]
 
     if pay is None:
-      return jsonify({'daypayments': 0})
+      return jsonify({'total': 0})
     else:
-      return jsonify({'daypayments': pay})
+      sql = "SELECT sum(one), sum(two), sum(five), sum(ten), sum(twenty), sum(fifty), sum(hundred), sum(two_hundred),sum(five_hundred) FROM details d INNER JOIN payments p ON (d.payments_id=p.id) WHERE p.date_entry BETWEEN '"+startDate+" 00:00:00' AND NOW();"
+      cursor.execute(sql)
+      datos = cursor.fetchall()
+    for fila in datos:
+      one=fila[0]
+      two=fila[1]
+      five=fila[2]
+      ten=fila[3]
+      twenty=fila[4]
+      fifty=fila[5]
+      hundred=fila[6]
+      twoHundred=fila[7]
+      fiveHundred=fila[8]
+
+      return jsonify(
+        {'total': pay,
+         'denominations':{
+           '$1': one,
+           '$2': two,
+           '$5': five,
+           '$10': ten,
+           '$20': twenty,
+           '$50': fifty,
+           '$100': hundred,
+           '$200': twoHundred,
+           '$500': fiveHundred
+          }
+         }
+        )
   except Exception as ex:
     print(ex)
     return jsonify({'mensaje': "Error"})
@@ -61,11 +89,29 @@ def add_pay():
       cursor.execute(sql)
       datos = cursor.fetchone()
 
-      if datos == None:      
+      if datos == None:
+        quantity = request.json['quantity'];
+        denominations=request.json["denominations"]
+        one=denominations['$1']
+        two=denominations['$2']
+        five=denominations['$5']
+        ten=denominations['$10']
+        twenty=denominations['$20']
+        fifty=denominations['$50']
+        hundred=denominations['$100']
+        twoHundred=denominations['$200']
+        fiveHundred=denominations['$500']
+
         sql = """INSERT INTO payments ( folio, quantity) 
-                        VALUES ('{0}', '{1}')""".format(folio, request.json['quantity'])
+                       VALUES ('{0}', '{1}')""".format(folio, quantity)
         cursor.execute(sql)
         conexion.connection.commit()
+
+        sql = """INSERT INTO details ( payments_id, one, two, five, ten, twenty, fifty, hundred, two_hundred, five_hundred) 
+                        VALUES ('{0}', '{1}','{2}', '{3}','{4}', '{5}','{6}', '{7}','{8}', '{9}')""".format( cursor.lastrowid, one, two, five, ten, twenty, fifty, hundred, twoHundred, fiveHundred)
+        cursor.execute(sql)
+        conexion.connection.commit()
+
         return jsonify({'folio': folio,'Mensaje': "Pago Registrado"})
       else:
         return jsonify({'mensaje': "Error: Folio ya fue registrado"})
