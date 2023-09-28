@@ -7,7 +7,6 @@ CREATE TABLE `app_payments`.`payments` (
 ALTER TABLE `app_payments`.`payments` 
 ADD COLUMN `folio` VARCHAR(45) NOT NULL AFTER `id`;
 
-
 CREATE TABLE IF NOT EXISTS `app_payments`.`details` (
   `iddetails` INT(11) NOT NULL AUTO_INCREMENT,
   `payments_id` INT(11) NOT NULL,
@@ -27,7 +26,4 @@ CREATE TABLE IF NOT EXISTS `app_payments`.`details` (
     REFERENCES `app_payments`.`payments` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci;
 
